@@ -1,0 +1,45 @@
+# === 第一步：封裝原始資料 (Bitcoin block data) === 將原始 bitcoin.dat 壓縮成 bitcoin.tar.gz,檢查壓縮檔大小與存在性
+tar -czf bitcoin.tar.gz bitcoin.dat         
+ls -lh bitcoin.tar.gz                        
+
+# === 第二步：應用層 FEC 編碼 (zFEC) === 將壓縮檔切成 15 份，其中任意 10 份可重建,檢查 FEC 分片是否生成成功
+zfec -m 15 -k 10 bitcoin.tar.gz            
+ls bitcoin.tar.gz.*.fec                     
+
+# === 第三步：封裝 FEC 檔為單一資料包 === 將所有 FEC 分片重新打包成一個 tar 檔,檢查封裝後檔案大小
+tar -cf fec_bundle.tar bitcoin.tar.gz.*.fec  
+ls -lh fec_bundle.tar                        
+
+# === 第四步：封裝為 DVB-S2 傳輸格式 (TS packets) === 將 tar 檔封裝為 188-byte MPEG-TS 資料包,檢查 TS 檔生成
+python3 wrap_to_ts_packets.py fec_bundle.tar bitcoin.ts   
+ls -lh bitcoin.ts                                        
+
+# === 第五步：模擬衛星傳輸與接收 (GNU Radio Companion) === 檢查模擬輸出檔案 bitcoin2.ts
+ls -lh bitcoin2.ts                                     
+
+# === 第六步：模擬接收端還原 TS 封包 === 將 TS 解封為原始 tar 檔,檢查還原出的 tar 檔大小是否一致
+python3 restore_from_ts_packets.py bitcoin2.ts fec_bundle_rx.tar  
+ls -lh fec_bundle_rx.tar                                        
+
+# === 第七步：模擬接收端解封 FEC 分片 === 建立資料夾存放解封後的 FEC 分片,解開 fec_bundle_rx.tar，取得所有 .fec 分片,確認分片檔案存在
+mkdir fec_rx                                     
+tar -xf fec_bundle_rx.tar -C fec_rx                
+ls fec_rx                                       
+
+# === 第八步：模擬 FEC 解碼與原始壓縮檔重建 === 利用 zunfec 解出原始 bitcoin_rx.tar.gz,確認解碼後的檔案大小
+cd fec_rx
+zunfec -o bitcoin_rx.tar.gz bitcoin.tar.gz.*.fec  
+ls -lh bitcoin_rx.tar.gz                          
+
+# === 第九步：直接從壓縮包提取 bitcoin.dat，改名 bitcoin2.dat === 直接輸出 bitcoin.dat 內容並改名 bitcoin2.dat
+tar -xOzf bitcoin_rx.tar.gz bitcoin.dat > ../bitcoin2.dat   
+ls -lh ../bitcoin2.dat 
+
+# === 第十步：檢查原始與還原資料一致性 === 比對兩個檔案的位元組數,若 cmp 無差異則顯示成功，否則顯示錯誤
+wc -c ./bitcoin.dat ../bitcoin2.dat             
+cmp ../bitcoin.dat ../bitcoin2.dat && echo "✅ 完全一致，zFEC + DVB-S2 無遺失流程正確" || echo "❌ 不一致"                               
+
+# === 第十一步：解析原始與還原之 Bitcoin 區塊檔頭資訊 === 解析原始 bitcoin.dat，輸出前 5 個區塊標頭,解析還原後 bitcoin2.dat，驗證內容是否完全一致
+python3 parse_blkdat_headers.py bitcoin.dat 5    
+python3 parse_blkdat_headers.py bitcoin2.dat 5    
+
