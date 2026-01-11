@@ -1,0 +1,41 @@
+比特幣衛星同步流程（Ubuntu 20.04）－ 文字流程圖
+
+┌──────────────────────────────────────────────┐
+│                 起始環境準備                  │
+│         Operating System：Ubuntu 20.04        │
+└──────────────────────────────────────────────┘
+                     │
+                     ▼
+Step 1. 安裝 Python 套件管理器 pip3
+指令：sudo apt-get install python3-pip
+
+Step 2. 安裝 Blockstream Satellite CLI
+指令：sudo pip3 install blocksat-cli
+
+Step 3. 啟動 Blocksat 設定
+指令：blocksat-cli cfg
+
+Step 4. 依照互動式選單回答設定問題
+（依據 Blockstream 官方指南順序）
+ 1.4
+ 2.0
+ 3.0
+ 4.3
+ 5.0
+
+Step 5. 安裝 Blockstream 衛星依賴套件
+指令：blocksat-cli deps install
+
+Step 6. 安裝 Bitcoin 相關套件依賴
+指令：blocksat-cli deps install --btc
+
+Step 7. 啟動 Bitcoin Satellite 模式
+指令：blocksat-cli btc
+
+Step 8. 啟動 Bitcoin Core 節點
+指令：bitcoind / bitcoind -prune=550
+
+
+https://github.com/igorauad/gr-dvbs2rx 
+
+https://github.com/gnuradio/gnuradio
