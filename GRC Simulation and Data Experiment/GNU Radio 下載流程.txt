@@ -1,0 +1,40 @@
+# GNU Radio 安裝流程（含中文註解）
+
+# 新增 GNU Radio 官方 PPA，取得較新的套件版本
+sudo add-apt-repository ppa:gnuradio/gnuradio-releases
+
+# 更新套件列表,安裝 GNU Radio 與開發套件,確認安裝的 GNU Radio 版本
+sudo apt update
+sudo apt install gnuradio gnuradio-dev
+gnuradio-config-info -v
+
+# 再次更新套件列表（保持最新）,安裝 Git，才能下載外部模組,下載 DVB-S2 接收端外掛（gr-dvbs2rx）
+sudo apt update
+sudo apt install git
+git clone https://github.com/igorauad/gr-dvbs2rx.git
+
+# 進入下載的專案資料夾,下載並同步子模組，確保依賴齊全
+cd gr-dvbs2rx
+git submodule update --init --recursive
+
+# 建立新的 build 資料夾,進入 build 目錄
+mkdir build
+cd build
+
+# 編譯前再次更新系統,安裝編譯所需工具與 CMake,使用 CMake 產生編譯設定
+sudo apt update
+sudo apt install build-essential cmake
+cmake ..
+
+# 使用所有 CPU 核心編譯，加速 build 速度
+make -j$(nproc)
+
+# 安裝編譯後的模組到系統中,更新系統的共享函式庫快取
+sudo make install
+sudo ldconfig
+
+# 安裝 xterm（有些 GRC block 會需要）
+sudo apt install xterm
+
+# 啟動 GNU Radio Companion（GRC）
+gnuradio-companion
